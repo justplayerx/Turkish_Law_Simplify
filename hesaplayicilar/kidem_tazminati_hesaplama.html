@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kıdem Tazminatı Hesaplama</title>
+<!-- Google Fonts - Inter & JetBrains Mono -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- html2canvas ve jspdf kütüphaneleri -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --bg-main: #0b0f19;
+    --bg-card: #151b2c;
+    --bg-input: #1e2640;
+    --border: #2a3556;
+    --border-focus: #4f46e5;
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+    --text-inverse: #0b0f19;
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --success: #10b981;
+    --success-bg: rgba(16, 185, 129, 0.1);
+    --danger: #f43f5e;
+    --danger-bg: rgba(244, 63, 94, 0.1);
+    --warn: #f59e0b;
+    --warn-bg: rgba(245, 158, 11, 0.1);
+    --info-bg: rgba(79, 70, 229, 0.1);
+    --accent: #818cf8;
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  }
+
+  [data-theme="light"] {
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-input: #f1f5f9;
+    --border: #cbd5e1;
+    --border-focus: #4f46e5;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --text-inverse: #ffffff;
+    --success-bg: rgba(16, 185, 129, 0.08);
+    --danger-bg: rgba(244, 63, 94, 0.08);
+    --warn-bg: rgba(245, 158, 11, 0.08);
+    --info-bg: rgba(79, 70, 229, 0.08);
+    --shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; transition: background-color 0.2s, border-color 0.2s; }
+  body { font-family: var(--font-sans); background: var(--bg-main); color: var(--text-main); padding: 40px 20px; line-height: 1.5; }
+  
+  .container { max-width: 1100px; margin: auto; }
+  
+  /* Üst Başlık & Tema Butonu */
+  .header-wrapper { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; gap: 16px; }
+  .header-title h1 { font-size: 28px; font-weight: 800; tracking: -0.025em; background: linear-gradient(135deg, #a5b4fc, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  [data-theme="light"] .header-title h1 { background: linear-gradient(135deg, #4f46e5, #1d4ed8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header-title p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+  
+  .theme-toggle-btn { background: var(--bg-card); border: 1px solid var(--border); padding: 10px; border-radius: 12px; cursor: pointer; color: var(--text-main); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); }
+  .theme-toggle-btn:hover { border-color: var(--accent); }
+  .theme-toggle-btn svg { width: 20px; height: 20px; }
+
+  /* Ana Düzen */
+  .row { display: flex; gap: 24px; flex-wrap: wrap; align-items: stretch; }
+  .col-left { flex: 1; min-width: 360px; display: flex; flex-direction: column; gap: 24px; }
+  .col-right { width: 340px; display: flex; flex-direction: column; }
+  .col-right .card { flex: 1; display: flex; flex-direction: column; }
+
+  /* Kart Tasarımları */
+  .card { background: var(--bg-card); border-radius: 16px; padding: 28px; box-shadow: var(--shadow); border: 1px solid var(--border); position: relative; overflow: hidden; }
+  .card h2 { font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  
+  /* Form Tasarımları */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .form-group { display: flex; flex-direction: column; gap: 8px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 13px; font-weight: 600; color: var(--text-muted); tracking: 0.05em; text-transform: uppercase; }
+  
+  .input-wrapper { position: relative; display: flex; align-items: center; }
+  .input-wrapper svg { position: absolute; left: 14px; width: 18px; height: 18px; color: var(--text-muted); pointer-events: none; }
+  input { width: 100%; padding: 12px 14px 12px 42px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; background: var(--bg-input); color: var(--text-main); font-family: var(--font-sans); }
+  input:focus { outline: none; border-color: var(--border-focus); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15); }
+  
+  /* Aktif Tavan Bilgilendirmesi */
+  .live-tavan-badge { background: var(--info-bg); border: 1px solid var(--border); padding: 12px 16px; border-radius: 12px; margin-top: 16px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+  .live-tavan-badge span { color: var(--text-muted); font-weight: 500; }
+  .live-tavan-badge strong { color: var(--accent); font-family: var(--font-mono); font-size: 14px; }
+
+  /* Butonlar */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 24px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s, filter 0.2s; }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { filter: brightness(1.1); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { filter: brightness(1.1); }
+  .btn-group { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-top: 24px; }
+
+  /* Tablolar */
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+  th, td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  th { background: rgba(0,0,0,0.15); font-weight: 600; color: var(--text-main); font-size: 12px; text-transform: uppercase; tracking: 0.05em; }
+  [data-theme="light"] th { background: rgba(0,0,0,0.03); }
+  td { background: transparent; color: var(--text-main); }
+  tr:last-child td { border-bottom: none; }
+  
+  .bold { font-weight: 700; color: var(--text-main); }
+  .amount { text-align: right; font-family: var(--font-mono); font-weight: 500; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  
+  /* Sonuç Değer Hücreleri */
+  .highlight-row { background: rgba(79, 70, 229, 0.05) !important; }
+  .total-row { background: rgba(16, 185, 129, 0.08) !important; }
+  
+  /* Mesaj Kutuları */
+  .msg { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 12px; font-size: 14px; font-weight: 500; margin-top: 16px; line-height: 1.4; border: 1px solid transparent; }
+  .msg svg { width: 20px; height: 20px; flex-shrink: 0; }
+  .msg-info { background: var(--info-bg); color: var(--accent); border-color: rgba(79, 70, 229, 0.2); }
+  .msg-warn { background: var(--warn-bg); color: var(--warn); border-color: rgba(245, 158, 11, 0.2); }
+  .msg-danger { background: var(--danger-bg); color: var(--danger); border-color: rgba(244, 63, 94, 0.2); }
+
+  /* Tavan Sağ Panel */
+  .tavan-header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  .search-box { position: relative; display: flex; align-items: center; }
+  .search-box svg { position: absolute; left: 12px; width: 16px; height: 16px; color: var(--text-muted); }
+  .search-box input { padding: 8px 12px 8px 36px; font-size: 13px; border-radius: 8px; }
+  
+  .tavan-scroll { flex: 1; max-height: 520px; overflow-y: auto; border-radius: 10px; border: 1px solid var(--border); }
+  .tavan-scroll table { font-size: 12px; }
+  .tavan-scroll th, .tavan-scroll td { padding: 8px 10px; }
+  .tavan-scroll td { font-family: var(--font-mono); }
+  .tavan-scroll tr.active-tavan-row td { background: var(--info-bg); color: var(--accent); font-weight: 600; }
+
+  /* Toast Bildirimi */
+  .copy-toast { position: fixed; bottom: 30px; left: 50%; transform: translate(-50%, 20px); background: #10b981; color: #fff; padding: 14px 28px; border-radius: 12px; font-size: 14px; font-weight: 600; opacity: 0; transition: transform 0.3s, opacity 0.3s; pointer-events: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); display: flex; align-items: center; gap: 8px; z-index: 1000; }
+  .copy-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* Yazıcı (Print) Düzeni */
+  @media print {
+    body { background: #fff; color: #000; padding: 0; margin: 0; }
+    .container { max-width: 100%; }
+    .theme-toggle-btn, .col-right, .btn-group, #uyariMesaji, .copy-toast, .card h2, .form-grid { display: none !important; }
+    .card { border: none; box-shadow: none; padding: 0; margin-bottom: 0; }
+    #sonucOzetCard { display: block !important; }
+    #sonucOzetCard h2 { display: block !important; font-size: 20px; color: #000; text-align: center; border: none; margin-bottom: 16px; }
+    table { font-size: 12px; border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #000; padding: 8px 10px; color: #000 !important; background: #fff !important; }
+    th { background: #f0f0f0 !important; font-weight: 700; }
+    .bold, .amount { color: #000 !important; }
+  }
+
+  /* Responsive Tasarım */
+  @media (max-width: 960px) {
+    body { padding: 20px 10px; }
+    .row { flex-direction: column; }
+    .col-left, .col-right { width: 100%; min-width: 0; }
+    .col-right { height: auto; }
+    .tavan-scroll { max-height: 300px; }
+    .btn-group { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  
+  <!-- Üst Başlık Bölümü -->
+  <div class="header-wrapper">
+    <div class="header-title">
+      <h1>Kıdem Tazminatı Hesaplama</h1>
+      <p>Güncel tavan oranları ile kıdem tazminatı hesaplama aracı</p>
+    </div>
+    <button class="theme-toggle-btn" id="themeBtn" onclick="toggleTheme()" title="Temayı Değiştir">
+      <!-- Sun/Moon Icon -->
+      <svg id="themeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.364l-.707-.707M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="row">
+    <!-- Sol Panel: Giriş ve Sonuçlar -->
+    <div class="col-left">
+      <div class="card">
+        <h2>
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+          Giriş Bilgileri
+        </h2>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Toplam Hizmet Gün Sayısı</label>
+            <div class="input-wrapper">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <input type="number" id="gunSayisi" min="360" placeholder="Örn: 1800">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Fesih Tarihi</label>
+            <div class="input-wrapper">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              <input type="date" id="fesihTarihi" onchange="tarihDegisti(this.value)">
+            </div>
+          </div>
+          <div class="form-group full">
+            <label>30 Günlük Giydirilmiş Brüt Ücret (TL)</label>
+            <div class="input-wrapper">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <input type="number" id="aylikUcret" step="0.01" placeholder="Örn: 55000">
+            </div>
+          </div>
+        </div>
+        
+        <div class="live-tavan-badge" id="canliTavanKutusu" style="display: none;">
+          <span>Seçilen Tarihteki Kıdem Tavanı:</span>
+          <strong id="canliTavanMiktari">0.00 TL</strong>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="hesapla()">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            Hesapla
+          </button>
+          <button class="btn btn-success" onclick="tabloyuKopyala()">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            Kopyala
+          </button>
+          <button class="btn btn-danger" onclick="pdfKaydet()">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            PDF İndir
+          </button>
+        </div>
+        
+        <div id="uyariMesaji"></div>
+      </div>
+
+      <!-- Hesaplama Sonuç Tablosu -->
+      <div class="card" id="sonucOzetCard" style="display: none;">
+        <h2>
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Hesaplama Sonuçları
+        </h2>
+        <div class="table-wrap">
+          <table id="sonucTablosu">
+            <thead>
+              <tr>
+                <th style="width:45%">Açıklama</th>
+                <th style="width:35%">Değer</th>
+                <th style="width:20%">Bilgi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Toplam hizmet süresi (SGK)</td>
+                <td id="s1a" class="bold"></td>
+                <td rowspan="4" style="vertical-align:middle;font-style:italic;color:var(--text-muted);font-size:11px;text-align:left;background:rgba(0,0,0,0.08);padding: 12px;border-left: 2px solid var(--accent);">
+                  Bu rapor bilgilendirme amacıyla üretilmiştir. Lütfen resmi işlemler öncesinde kontrol ediniz.
+                </td>
+              </tr>
+              <tr>
+                <td>Fesih tarihi</td>
+                <td id="s2a" class="bold"></td>
+              </tr>
+              <tr>
+                <td>30 Günlük Giydirilmiş Brüt Ücret</td>
+                <td id="s3a" class="bold"></td>
+              </tr>
+              <tr>
+                <td>Fesih tarihindeki kıdem tavanı</td>
+                <td id="s4a" class="amount bold"></td>
+              </tr>
+              <tr class="highlight-row">
+                <th colspan="2">Hak Edilen Süre & Birim Tazminat Oranı</th>
+                <th style="text-align:right;">Toplam Brüt</th>
+              </tr>
+              <tr>
+                <td id="s6a"></td>
+                <td id="s6b" class="amount"></td>
+                <td id="s6c" class="amount bold"></td>
+              </tr>
+              <tr>
+                <td id="s7a"></td>
+                <td id="s7b" class="amount"></td>
+                <td id="s7c" class="amount bold"></td>
+              </tr>
+              <tr>
+                <td id="s8a"></td>
+                <td id="s8b" class="amount"></td>
+                <td id="s8c" class="amount bold"></td>
+              </tr>
+              <tr class="highlight-row">
+                <td colspan="2" class="bold">Toplam Brüt Kıdem Tazminatı</td>
+                <td id="s9c" class="amount bold" style="color:var(--accent);"></td>
+              </tr>
+              <tr>
+                <td colspan="2">Hesaplanan Damga Vergisi (%0,759)</td>
+                <td id="s10c" class="amount" style="color:var(--danger);"></td>
+              </tr>
+              <tr class="total-row">
+                <td colspan="2" class="bold" style="font-size: 15px;">Net Ödenecek Kıdem Tazminatı</td>
+                <td id="s11c" class="amount bold" style="color:var(--success); font-size: 16px;"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sağ Panel: Kıdem Tazminatı Tavanları Referans Listesi -->
+    <div class="col-right">
+      <div class="card">
+        <div class="tavan-header">
+          <h2>
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            Tarihsel Kıdem Tavanları
+          </h2>
+          <div class="search-box">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input type="text" id="tavanAra" onkeyup="tavanlariFiltrele()" placeholder="Yıl veya tutar ara...">
+          </div>
+        </div>
+        <div class="tavan-scroll" id="tavanRefTable"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bildirim Toast Alanı -->
+<div id="toast" class="copy-toast">
+  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+  <span id="toastMsg">İşlem Başarılı!</span>
+</div>
+
+<script>
+var tavanVerisi = [];
+
+function pad(n) { return n.length === 1 ? '0' + n : n; }
+function parseDateDDMMYYYY(str) {
+  var parts = str.trim().split('.');
+  return parts[2] + '-' + pad(parts[1]) + '-' + pad(parts[0]);
+}
+
+var rawTavanData = [
+  ['1.07.2009','31.12.2009',2365.16],
+  ['1.01.2010','30.06.2010',2427.03],
+  ['1.07.2010','31.12.2010',2517.01],
+  ['1.01.2011','30.06.2011',2623.23],
+  ['1.07.2011','31.12.2011',2731.85],
+  ['1.01.2012','30.06.2012',2917.27],
+  ['1.07.2012','31.12.2012',3033.98],
+  ['1.01.2013','30.06.2013',3129.25],
+  ['1.07.2013','31.12.2013',3254.44],
+  ['1.01.2014','30.06.2014',3438.22],
+  ['1.07.2014','31.12.2014',3438.22],
+  ['1.01.2015','30.06.2015',3541.37],
+  ['1.07.2015','31.08.2015',3709.98],
+  ['1.09.2015','31.12.2015',3828.37],
+  ['1.01.2016','30.06.2016',4092.53],
+  ['1.07.2016','31.12.2016',4297.21],
+  ['1.01.2017','30.06.2017',4426.16],
+  ['1.07.2017','31.12.2017',4732.48],
+  ['1.01.2018','30.06.2018',5001.76],
+  ['1.07.2018','31.12.2018',5434.42],
+  ['1.01.2019','30.06.2019',6017.00],
+  ['1.07.2019','31.12.2019',6379.86],
+  ['1.01.2020','30.06.2020',6730.15],
+  ['1.07.2020','31.12.2020',7117.17],
+  ['1.01.2021','30.06.2021',7638.96],
+  ['1.07.2021','31.12.2021',8284.51],
+  ['1.01.2022','30.06.2022',10596.74],
+  ['1.07.2022','31.12.2022',15371.40],
+  ['1.01.2023','30.06.2023',19982.83],
+  ['1.07.2023','31.12.2023',23489.83],
+  ['1.01.2024','30.06.2024',35058.58],
+  ['1.07.2024','31.12.2024',41828.42],
+  ['1.01.2025','30.06.2025',46655.43],
+  ['1.07.2025','31.12.2025',53919.68],
+  ['1.01.2026','30.06.2026',64948.77],
+  ['1.07.2026','31.12.2026',73729.84]
+];
+
+rawTavanData.forEach(function(r) {
+  tavanVerisi.push({
+    baslangic: parseDateDDMMYYYY(r[0]),
+    bitis: parseDateDDMMYYYY(r[1]),
+    tutar: r[2]
+  });
+});
+
+// Tema Değiştirici
+function toggleTheme() {
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', newTheme);
+  
+  const themeIcon = document.getElementById('themeIcon');
+  if (newTheme === 'light') {
+    themeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />`;
+  } else {
+    themeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.364l-.707-.707M15 12a3 3 0 11-6 0 3 3 0 016 0z" />`;
+  }
+}
+
+// Tarih Değiştiğinde Canlı Tavan Gösterme ve Tablo Satırı Vurgulama
+function tarihDegisti(tarihStr) {
+  if (!tarihStr) return;
+  const secilenTarih = new Date(tarihStr + 'T00:00:00');
+  const bulunanTavan = tavanTarihtenBul(secilenTarih);
+  
+  const canliTavanKutusu = document.getElementById('canliTavanKutusu');
+  const canliTavanMiktari = document.getElementById('canliTavanMiktari');
+  
+  if (bulunanTavan !== null) {
+    canliTavanMiktari.textContent = sayiFormat(bulunanTavan) + ' TL';
+    canliTavanKutusu.style.display = 'flex';
+    vurgulaTavanSatiri(tarihStr);
+  } else {
+    canliTavanKutusu.style.display = 'none';
+  }
+}
+
+// Sağ taraftaki tabloda o döneme ait tavanı vurgula
+function vurgulaTavanSatiri(tarihStr) {
+  const t = new Date(tarihStr + 'T00:00:00').getTime();
+  const rows = document.querySelectorAll('#tavanRefTable tbody tr');
+  rows.forEach(row => row.classList.remove('active-tavan-row'));
+  
+  for (let i = 0; i < tavanVerisi.length; i++) {
+    const bas = new Date(tavanVerisi[i].baslangic + 'T00:00:00').getTime();
+    const bit = new Date(tavanVerisi[i].bitis + 'T00:00:00').getTime();
+    if (t >= bas && t <= bit) {
+      const activeRow = document.getElementById('tavan-row-' + i);
+      if (activeRow) {
+        activeRow.classList.add('active-tavan-row');
+        activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      break;
+    }
+  }
+}
+
+function gunleriParcala(toplamGun, giymisUcret) {
+  var yil = Math.floor(toplamGun / 360);
+  var kalan = toplamGun % 360;
+  var ay = Math.floor(kalan / 30);
+  var gun = kalan % 30;
+
+  var yillikKidem = giymisUcret;
+  var aylikKidem = giymisUcret / 12;
+  var gunlukKidem = giymisUcret / 12 / 30;
+
+  var yillikToplam = yil * yillikKidem;
+  var aylikToplam = ay * aylikKidem;
+  var gunlukToplam = gun * gunlukKidem;
+  var genelToplam = yillikToplam + aylikToplam + gunlukToplam;
+  var damgaVergisi = genelToplam * 0.759 / 100;
+  var netOdenecek = genelToplam - damgaVergisi;
+
+  return {
+    yil: yil, ay: ay, gun: gun,
+    yilString: yil + ' Yıl (Yıllık Hak)',
+    ayString: ay + ' Ay (Aylık Hak)',
+    gunString: gun + ' Gün (Günlük Hak)',
+    yillikKidem: yillikKidem,
+    aylikKidem: aylikKidem,
+    gunlukKidem: gunlukKidem,
+    yillikToplam: yillikToplam,
+    aylikToplam: aylikToplam,
+    gunlukToplam: gunlukToplam,
+    genelToplam: genelToplam,
+    damgaVergisi: damgaVergisi,
+    netOdenecek: netOdenecek
+  };
+}
+
+function sayiFormat(s) {
+  return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(s);
+}
+
+function tavanTarihtenBul(tarih) {
+  var ts = tarih.getTime();
+  for (var i = 0; i < tavanVerisi.length; i++) {
+    var bas = new Date(tavanVerisi[i].baslangic + 'T00:00:00');
+    var bit = new Date(tavanVerisi[i].bitis + 'T00:00:00');
+    if (ts >= bas.getTime() && ts <= bit.getTime()) {
+      return tavanVerisi[i].tutar;
+    }
+  }
+  return null;
+}
+
+function hesapla() {
+  var gunInput = document.getElementById('gunSayisi').value.trim();
+  var tarihInput = document.getElementById('fesihTarihi').value;
+  var ucretInput = document.getElementById('aylikUcret').value.trim();
+
+  document.getElementById('uyariMesaji').innerHTML = '';
+
+  if (!gunInput || !tarihInput || !ucretInput) {
+    gosterUyari('Lütfen tüm alanları doldurun!', 'warn');
+    return;
+  }
+
+  var gunSayisi = parseInt(gunInput, 10);
+  if (isNaN(gunSayisi)) {
+    gosterUyari('Girilen gün sayısı rakamlardan oluşmuyor!', 'warn');
+    return;
+  }
+
+  var fesihTarihi = new Date(tarihInput + 'T00:00:00');
+  if (isNaN(fesihTarihi.getTime())) {
+    gosterUyari('Girilen fesih tarihi tarih formatında değil!', 'warn');
+    return;
+  }
+
+  var minDate = new Date('2009-07-01T00:00:00');
+  if (fesihTarihi < minDate) {
+    gosterUyari('Girilen fesih tarihi 01.07.2009 tarihinden küçük olamaz!', 'warn');
+    return;
+  }
+
+  if (tavanVerisi.length > 0) {
+    var sonTavan = tavanVerisi[tavanVerisi.length - 1];
+    var maxDate = new Date(sonTavan.bitis + 'T00:00:00');
+    if (fesihTarihi > maxDate) {
+      gosterUyari('Girilen fesih tarihi ' + sonTavan.bitis.split('-').reverse().join('.') + ' tarihinden büyük olamaz!', 'warn');
+      return;
+    }
+  }
+
+  if (gunSayisi < 360) {
+    gosterUyari('Kıdem gün sayısı 360 günden aşağı olamaz!', 'warn');
+    return;
+  }
+
+  var giydirilmisUcret = parseFloat(ucretInput);
+  if (isNaN(giydirilmisUcret) || giydirilmisUcret <= 0) {
+    gosterUyari('Geçerli bir ücret giriniz!', 'warn');
+    return;
+  }
+
+  var bulunanTavan = tavanTarihtenBul(fesihTarihi);
+  if (bulunanTavan === null) {
+    gosterUyari('Fesih tarihi için tavan bilgisi bulunamadı!', 'warn');
+    return;
+  }
+
+  var dikkateAlinacakUcret;
+  var mesaj = '';
+  var msgClass = 'msg-info';
+
+  if (giydirilmisUcret <= bulunanTavan) {
+    mesaj = 'Giydirilmiş ücret kıdem tazminatı tavanını aşmadığından, hesaplamalar <strong>kendi giydirilmiş brüt ücretiniz</strong> üzerinden gerçekleştirilmiştir.';
+    dikkateAlinacakUcret = giydirilmisUcret;
+    msgClass = 'msg-info';
+  } else {
+    mesaj = 'Giydirilmiş ücret kıdem tazminatı tavanını aştığı için, hesaplamalar <strong>yasal tavan ücret sınırlandırmasıyla (' + sayiFormat(bulunanTavan) + ' TL)</strong> gerçekleştirilmiştir.';
+    dikkateAlinacakUcret = bulunanTavan;
+    msgClass = 'msg-warn';
+  }
+
+  // Uyarı Mesajını Şık SVG İkonlu Hale Getirme
+  var warningIcon = msgClass === 'msg-info' 
+    ? `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
+    : `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+
+  document.getElementById('uyariMesaji').innerHTML = `<div class="msg ${msgClass}">${warningIcon}<div>${mesaj}</div></div>`;
+
+  var r = gunleriParcala(gunSayisi, dikkateAlinacakUcret);
+
+  document.getElementById('s1a').textContent = gunSayisi + ' Gün';
+  document.getElementById('s2a').textContent = fesihTarihi.toLocaleDateString('tr-TR');
+  document.getElementById('s3a').textContent = sayiFormat(giydirilmisUcret) + ' TL';
+  document.getElementById('s4a').textContent = sayiFormat(bulunanTavan) + ' TL';
+
+  document.getElementById('s6a').textContent = r.yilString;
+  document.getElementById('s6b').textContent = sayiFormat(r.yillikKidem) + ' TL';
+  document.getElementById('s6c').textContent = sayiFormat(r.yillikToplam) + ' TL';
+
+  document.getElementById('s7a').textContent = r.ayString;
+  document.getElementById('s7b').textContent = sayiFormat(r.aylikKidem) + ' TL';
+  document.getElementById('s7c').textContent = sayiFormat(r.aylikToplam) + ' TL';
+
+  document.getElementById('s8a').textContent = r.gunString;
+  document.getElementById('s8b').textContent = sayiFormat(r.gunlukKidem) + ' TL';
+  document.getElementById('s8c').textContent = sayiFormat(r.gunlukToplam) + ' TL';
+
+  document.getElementById('s9c').textContent = sayiFormat(r.genelToplam) + ' TL';
+  document.getElementById('s10c').textContent = sayiFormat(r.damgaVergisi) + ' TL';
+  document.getElementById('s11c').textContent = sayiFormat(r.netOdenecek) + ' TL';
+
+  document.getElementById('sonucOzetCard').style.display = 'block';
+  
+  // Hesaplama sonrasında sonuç alanına yumuşak kaydırma
+  document.getElementById('sonucOzetCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function gosterUyari(mesaj, tip) {
+  var cls = tip === 'warn' ? 'msg-warn' : 'msg-info';
+  var icon = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+  document.getElementById('uyariMesaji').innerHTML = `<div class="msg ${cls}">${icon}<div>${mesaj}</div></div>`;
+}
+
+function tabloyuKopyala() {
+  var get = function(id) { var e = document.getElementById(id); return e ? e.textContent.trim() : ''; };
+  var s1a = get('s1a'), s2a = get('s2a'), s3a = get('s3a'), s4a = get('s4a');
+  var s6a = get('s6a'), s6b = get('s6b'), s6c = get('s6c');
+  var s7a = get('s7a'), s7b = get('s7b'), s7c = get('s7c');
+  var s8a = get('s8a'), s8b = get('s8b'), s8c = get('s8c');
+  var s9c = get('s9c'), s10c = get('s10c'), s11c = get('s11c');
+  if (!s1a) { gosterUyari('Önce hesaplama yapın!', 'warn'); return; }
+
+  var metin = 'KIDEM TAZMİNATI HESAPLAMA DETAYLARI\n\n';
+  metin += 'Toplam Hizmet Süresi (SGK):\t' + s1a + '\n';
+  metin += 'Fesih Tarihi:\t' + s2a + '\n';
+  metin += '30 Günlük Giydirilmiş Brüt Ücret:\t' + s3a + '\n';
+  metin += 'Kıdem Tazminatı Tavanı:\t' + s4a + '\n\n';
+  metin += 'Hak Edilen Süre\tBirim Ücret\tToplam\n';
+  metin += s6a + '\t' + s6b + '\t' + s6c + '\n';
+  metin += s7a + '\t' + s7b + '\t' + s7c + '\n';
+  metin += s8a + '\t' + s8b + '\t' + s8c + '\n\n';
+  metin += 'Toplam Brüt Kıdem Tazminatı:\t' + s9c + '\n';
+  metin += 'Hesaplanan Damga Vergisi (%0,759):\t' + s10c + '\n';
+  metin += 'Net Ödenecek Kıdem Tazminatı:\t' + s11c + '\n';
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(metin).then(function() {
+      gosterToast('Tablo verileri kopyalandı!');
+    }).catch(function() {
+      fallbackKopyala(metin);
+    });
+  } else {
+    fallbackKopyala(metin);
+  }
+}
+
+// PDF Çıktısını Profesyonel/Kurumsal Düzene Kavuşturma ve Mobil Uyumlu Hale Getirme
+function pdfKaydet() {
+  var s1a = document.getElementById('s1a').textContent.trim();
+  if (!s1a) {
+    gosterUyari('Önce hesaplama yapın!', 'warn');
+    return;
+  }
+  gosterToast('Profesyonel PDF raporu oluşturuluyor...');
+
+  var get = function(id) { var e = document.getElementById(id); return e ? e.textContent.trim() : ''; };
+
+  // html2canvas'ın kusursuz render edebileceği, Grid içermeyen, Flex ve geleneksel tablo kullanan kusursuz bir yapı tasarlıyoruz.
+  var container = document.createElement('div');
+  container.style.cssText = 'position:absolute;left:0;top:-99999px;width:800px;background:#ffffff;padding:50px;font-family:Arial, Helvetica, sans-serif;color:#000000;box-sizing:border-box;line-height:1.5;';
+
+  // Dekoratif Üst Çizgi / Kurumsal Tasarım
+  var headerLine = document.createElement('div');
+  headerLine.style.cssText = 'height:8px;background:linear-gradient(90deg, #4f46e5 0%, #10b981 100%);margin-bottom:30px;border-radius:4px;';
+  container.appendChild(headerLine);
+
+  // Rapor Başlığı ve Tarihi (Flexbox ile hizalama - html2canvas flexbox'ı kusursuz destekler)
+  var headerDiv = document.createElement('div');
+  headerDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:35px;';
+  headerDiv.innerHTML = `
+    <div style="text-align:left;">
+      <h1 style="font-size:24px;font-weight:800;color:#1e3a8a;margin:0 0 6px 0;letter-spacing:-0.5px;font-family:Arial, sans-serif;">KIDEM TAZMİNATI HESAP RAPORU</h1>
+      <p style="font-size:13px;color:#475569;margin:0;">İş Hukuku Standartlarına Uygun Resmi Hesaplama Dökümü</p>
+    </div>
+    <div style="text-align:right;font-size:13px;color:#334155;">
+      <div style="font-weight:700;margin-bottom:4px;color:#000000;">Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}</div>
+      <div style="color:#64748b;">Fesih Tarihi: ${get('s2a')}</div>
+    </div>
+  `;
+  container.appendChild(headerDiv);
+
+  // Hizmet Bilgileri Bloğu (Flexbox ile yan yana iki kart)
+  var infoCards = document.createElement('div');
+  infoCards.style.cssText = 'display:flex;justify-content:space-between;gap:20px;margin-bottom:35px;';
+  infoCards.innerHTML = `
+    <div style="flex:1;background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:18px;box-sizing:border-box;">
+      <h3 style="font-size:14px;color:#4f46e5;font-weight:700;margin:0 0 12px 0;border-bottom:1px solid #cbd5e1;padding-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Çalışma Süresi Bilgileri</h3>
+      <table style="width:100%;font-size:13px;border-collapse:collapse;border:none;">
+        <tr style="background:transparent;"><td style="border:none;padding:6px 0;color:#475569;text-align:left;">Toplam Hizmet Süresi:</td><td style="border:none;padding:6px 0;text-align:right;font-weight:700;color:#000000;">${get('s1a')}</td></tr>
+        <tr style="background:transparent;"><td style="border:none;padding:6px 0;color:#475569;text-align:left;">Fesih/Ayrılış Tarihi:</td><td style="border:none;padding:6px 0;text-align:right;font-weight:700;color:#000000;">${get('s2a')}</td></tr>
+      </table>
+    </div>
+    <div style="flex:1;background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:18px;box-sizing:border-box;">
+      <h3 style="font-size:14px;color:#4f46e5;font-weight:700;margin:0 0 12px 0;border-bottom:1px solid #cbd5e1;padding-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Ücret & Tavan Sınırları</h3>
+      <table style="width:100%;font-size:13px;border-collapse:collapse;border:none;">
+        <tr style="background:transparent;"><td style="border:none;padding:6px 0;color:#475569;text-align:left;">Giydirilmiş Brüt Ücret:</td><td style="border:none;padding:6px 0;text-align:right;font-weight:700;color:#000000;">${get('s3a')}</td></tr>
+        <tr style="background:transparent;"><td style="border:none;padding:6px 0;color:#475569;text-align:left;">Dönem Yasal Tavanı:</td><td style="border:none;padding:6px 0;text-align:right;font-weight:700;color:#000000;">${get('s4a')}</td></tr>
+      </table>
+    </div>
+  `;
+  container.appendChild(infoCards);
+
+  // Hesaplama Tablosu (Siyah ve yüksek kontrastlı kenarlıklar - html2canvas miras alma hatasına karşılık her td'ye açıkça renk tanımlandı)
+  var mainTable = document.createElement('table');
+  mainTable.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;color:#000000;margin-bottom:35px;border:1px solid #94a3b8;';
+  
+  mainTable.innerHTML = `
+    <thead>
+      <tr style="background:#4f46e5;color:#ffffff;">
+        <th style="padding:12px 14px;font-weight:700;border:1px solid #4f46e5;text-align:left;font-size:13px;color:#ffffff;">Hak Edilen Süre Kırılımı</th>
+        <th style="padding:12px 14px;font-weight:700;border:1px solid #4f46e5;text-align:right;font-size:13px;color:#ffffff;">Birim Hak Ediş Oranı</th>
+        <th style="padding:12px 14px;font-weight:700;border:1px solid #4f46e5;text-align:right;font-size:13px;color:#ffffff;">Toplam Brüt</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background:#ffffff;">
+        <td style="padding:11px 14px;border:1px solid #94a3b8;font-weight:600;color:#000000;">${get('s6a')}</td>
+        <td style="padding:11px 14px;border:1px solid #94a3b8;text-align:right;font-weight:700;color:#000000;">${get('s6b')}</td>
+        <td style="padding:11px 14px;border:1px solid #94a3b8;text-align:right;font-weight:700;color:#000000;">${get('s6c')}</td>
+      </tr>
+      <tr style="background:#f8fafc;">
+        <td style="padding:11px 14px;border:1px solid #94a3b8;font-weight:600;color:#000000;">${get('s7a')}</td>
+        <td style="padding:11px 14px;border:1px solid #94a3b8;text-align:right;font-weight:700;color:#000000;">${get('s7b')}</td>
+        <td style="padding:11px 14px;border:1px solid #94a3b8;text-align:right;font-weight:700;color:#000000;">${get('s7c')}</td>
+      </tr>
+      <tr style="background:#ffffff;">
+        <td style="padding:11px 14px;border:1px solid #94a3b8;font-weight:600;color:#000000;">${get('s8a')}</td>
+        <td style="padding:11px 14px;border:1px solid #94a3b8;text-align:right;font-weight:700;color:#000000;">${get('s8b')}</td>
+        <td style="padding:11px 14px;border:1px solid #94a3b8;text-align:right;font-weight:700;color:#000000;">${get('s8c')}</td>
+      </tr>
+      <tr style="background:#f1f5f9;">
+        <td colspan="2" style="padding:12px 14px;border:1px solid #94a3b8;color:#000000;font-weight:800;font-size:13px;">TOPLAM BRÜT KIDEM TAZMİNATI</td>
+        <td style="padding:12px 14px;border:1px solid #94a3b8;text-align:right;color:#4f46e5;font-weight:800;font-size:13px;">${get('s9c')}</td>
+      </tr>
+      <tr style="background:#ffffff;">
+        <td colspan="2" style="padding:12px 14px;border:1px solid #94a3b8;font-weight:600;color:#475569;">Hesaplanan Damga Vergisi (%0,759)</td>
+        <td style="padding:12px 14px;border:1px solid #94a3b8;text-align:right;color:#ef4444;font-weight:700;">-${get('s10c')}</td>
+      </tr>
+      <tr style="background:#ecfdf5;">
+        <td colspan="2" style="padding:14px;border:2px solid #10b981;font-weight:800;font-size:14px;color:#065f46;">NET ÖDENECEK KIDEM TAZMİNATI</td>
+        <td style="padding:14px;border:2px solid #10b981;text-align:right;font-size:16px;color:#059669;font-weight:800;">${get('s11c')}</td>
+      </tr>
+    </tbody>
+  `;
+  container.appendChild(mainTable);
+
+  // İmza ve Tasdik Bloğu (CSS Grid yerine Flexbox kullandık)
+  var signSection = document.createElement('div');
+  signSection.style.cssText = 'display:flex;justify-content:space-between;margin-top:50px;padding-top:20px;border-top:1px dashed #cbd5e1;';
+  signSection.innerHTML = `
+    <div style="width:45%;box-sizing:border-box;">
+      <h4 style="font-size:13px;color:#475569;margin:0 0 50px 0;font-weight:700;text-transform:uppercase;">Hesaplamayı Yapan Yetkili / İmza</h4>
+      <div style="border-bottom:1px solid #000000;width:200px;height:20px;"></div>
+    </div>
+    <div style="width:45%;text-align:right;box-sizing:border-box;">
+      <h4 style="font-size:13px;color:#475569;margin:0 0 50px 0;font-weight:700;text-transform:uppercase;">Çalışan Tebellüğ / İmza</h4>
+      <div style="border-bottom:1px solid #000000;width:200px;height:20px;margin-left:auto;"></div>
+    </div>
+  `;
+  container.appendChild(signSection);
+
+  // Yasal Bilgi Notu / Dipnot
+  var disclaimer = document.createElement('div');
+  disclaimer.style.cssText = 'font-size:11px;color:#64748b;line-height:1.4;margin-top:60px;text-align:center;font-style:italic;font-weight:500;';
+  disclaimer.textContent = "Açıklama: Bu rapor, yürürlükteki 1475 sayılı İş Kanunu kıdem tazminatı tavan oranları çerçevesinde otomatik olarak hazırlanmıştır. Resmi işlemlerde teyit edilmesi önerilir.";
+  container.appendChild(disclaimer);
+
+  document.body.appendChild(container);
+
+  // html2canvas çağrısında windowWidth ve windowHeight parametreleri, özellikle mobil ekranlarda sayfanın büzüşmesini / yazıların kaymasını engeller.
+  html2canvas(container, {
+    scale: 3, // Yazıların kristal netliğinde okunabilmesi için ölçeği 3 katına çıkarıyoruz
+    backgroundColor: '#ffffff',
+    useCORS: true,
+    logging: false,
+    width: 800,
+    windowWidth: 800,
+    windowHeight: container.offsetHeight
+  })
+    .then(function(canvas) {
+      document.body.removeChild(container);
+      var imgData = canvas.toDataURL('image/png');
+      var pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+      var pdfW = 190;
+      var imgW = canvas.width;
+      var imgH = canvas.height;
+      var ratio = pdfW / imgW;
+      var pdfH = imgH * ratio;
+
+      if (pdfH > 277) { 
+        var scale2 = 277 / pdfH; 
+        pdfW *= scale2; 
+        pdfH = 277; 
+      }
+
+      // Sayfa ortalama hesabı
+      var leftMargin = (210 - pdfW) / 2;
+      pdf.addImage(imgData, 'PNG', leftMargin, 12, pdfW, pdfH);
+      pdf.save('Kidem_Tazminati_Hesap_Raporu_' + get('s2a') + '.pdf');
+      gosterToast('PDF Raporunuz başarıyla indirildi.');
+    })
+    .catch(function(err) {
+      console.error(err);
+      if (container.parentNode) { document.body.removeChild(container); }
+      gosterUyari('PDF oluşturulamadı! Lütfen tekrar deneyiniz.', 'warn');
+    });
+}
+
+function fallbackKopyala(metin) {
+  var ta = document.createElement('textarea');
+  ta.value = metin;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    gosterToast('Tablo verileri kopyalandı!');
+  } catch(e) {
+    gosterUyari('Kopyalama başarısız!', 'warn');
+  }
+  document.body.removeChild(ta);
+}
+
+function gosterToast(msg) {
+  var t = document.getElementById('toast');
+  var tm = document.getElementById('toastMsg');
+  tm.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// Tavan Tablosunu Oluşturma ve Arama Özelliği
+function tavanReferansTablosuOlustur() {
+  var html = '<table><thead><tr><th>Başlangıç</th><th>Bitiş</th><th style="text-align:right;">Tavan (TL)</th></tr></thead><tbody id="tavanListBody">';
+  tavanVerisi.forEach(function(t, idx) {
+    var bas = t.baslangic.split('-').reverse().join('.');
+    var bit = t.bitis.split('-').reverse().join('.');
+    html += '<tr id="tavan-row-' + idx + '"><td>' + bas + '</td><td>' + bit + '</td><td style="text-align:right; font-weight: 600;">' + sayiFormat(t.tutar) + ' TL</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('tavanRefTable').innerHTML = html;
+}
+
+// Sağ taraftaki tavan listesinde arama filtreleme
+function tavanlariFiltrele() {
+  var input = document.getElementById('tavanAra');
+  var filter = input.value.toLowerCase();
+  var rows = document.querySelectorAll('#tavanListBody tr');
+  
+  rows.forEach(function(row) {
+    var text = row.textContent.toLowerCase();
+    if (text.indexOf(filter) > -1) {
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  });
+}
+
+tavanReferansTablosuOlustur();
+
+document.getElementById('gunSayisi').addEventListener('keydown', function(e) { if (e.key === 'Enter') hesapla(); });
+document.getElementById('fesihTarihi').addEventListener('keydown', function(e) { if (e.key === 'Enter') hesapla(); });
+document.getElementById('aylikUcret').addEventListener('keydown', function(e) { if (e.key === 'Enter') hesapla(); });
+</script>
+</body>
+</html>
