@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İşe İade ve Boşta Geçen Süre Tazminatı Hesaplayıcı</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2pdf.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Özel Kaydırma Çubuğu */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Üst Başlık ve Header -->
+    <header class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-md py-6 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-blue-600/30 rounded-xl border border-blue-500/30">
+                    <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-extrabold tracking-tight">İşe İade & Boşta Geçen Süre Hesaplayıcı</h1>
+                    <p class="text-xs text-blue-300 font-medium">4857 Sayılı İş Kanunu ve Yargıtay Esaslarına Göre Web Uygulaması</p>
+                </div>
+            </div>
+            <!-- YZ Desteği & Sorumluluk Reddi Beyanı -->
+            <div class="text-right max-w-sm md:max-w-md">
+                <span class="text-[11px] bg-slate-800/80 text-slate-300 px-3.5 py-2 rounded-xl border border-slate-700/60 leading-relaxed block text-center md:text-left">
+                    Bu uygulama yapay zeka desteği ile hobi amaçlı tasarlanmıştır; Lütfen sonuçları kontrol ederek kullanınız.
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Ana İçerik Alanı -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Sol Kolon: Kullanıcı Girdileri (7 Kolon) -->
+            <div class="lg:col-span-7 space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+                    
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </span>
+                            <h2 class="font-bold text-slate-900 text-lg">Kullanıcı Girdileri</h2>
+                        </div>
+                        <span class="text-xs text-slate-400 italic">* Hesaplama gerçek zamanlıdır</span>
+                    </div>
+
+                    <!-- Temel Girdiler -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">
+                                Kıdem Gün Sayısı 
+                                <span class="text-indigo-600 font-normal lowercase italic text-[11px] block sm:inline sm:ml-1">(Bir ay 30 gün olarak giriş yapınız)</span>
+                            </label>
+                            <input type="number" id="kidemGun" value="" placeholder="Örn: 850" oninput="calculateAll()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Son Çıplak Brüt Ücret (Aylık - TL)</label>
+                            <div class="relative rounded-xl shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-slate-400 text-sm">₺</span>
+                                </div>
+                                <input type="number" id="ciplakBrut" value="" placeholder="Örn: 35000" oninput="calculateAll()" class="w-full pl-7 pr-3 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-semibold">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Fesih Nedeni Sendikal mı?</label>
+                            <select id="isSendikal" onchange="calculateAll()" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-semibold bg-white">
+                                <option value="Hayır">Hayır (Normal/Standart Fesih)</option>
+                                <option value="Evet">Evet (En az 1 yıllık maktu tazminat)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Öngörülen Gelir Vergisi Dilimi (%)</label>
+                            <select id="vergiOrani" onchange="calculateAll()" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-semibold bg-white">
+                                <option value="15" selected>15% (İlk Dilim)</option>
+                                <option value="20">20%</option>
+                                <option value="27">27%</option>
+                                <option value="35">35%</option>
+                                <option value="40">40%</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Çalışmaya Bağlı Olmayan Düzenli Sosyal Yan Haklar -->
+                    <div class="space-y-4 pt-4 border-t border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="p-1 bg-emerald-50 text-emerald-600 rounded">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </span>
+                            <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Sosyal ve Statüye Bağlı Yan Ödemeler (Aylık Brüt - TL)</h3>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Yemek Yardımı -->
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">Yemek Yardımı</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-slate-400 text-xs">₺</span>
+                                    </div>
+                                    <input type="number" id="benefit1" value="" placeholder="Örn: 4500" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                                </div>
+                            </div>
+                            <!-- Çocuk ve Aile Yardımı -->
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">Çocuk ve Aile Yardımı</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-slate-400 text-xs">₺</span>
+                                    </div>
+                                    <input type="number" id="benefit2" value="" placeholder="Örn: 1200" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                                </div>
+                            </div>
+                            <!-- Doğum, Evlilik, Ölüm -->
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">Doğum, Evlilik, Ölüm Yardımı (Ort.)</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-slate-400 text-xs">₺</span>
+                                    </div>
+                                    <input type="number" id="benefit3" value="" placeholder="Örn: 300" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                                </div>
+                            </div>
+                            <!-- Eğitim / Öğrenim Yardımı -->
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">Eğitim / Öğrenim Yardımı (Ort.)</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-slate-400 text-xs">₺</span>
+                                    </div>
+                                    <input type="number" id="benefit4" value="" placeholder="Örn: 500" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                                </div>
+                            </div>
+                            <!-- Bayram Harçlığı -->
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">Bayram Harçlığı / Yardımları (Ort.)</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-slate-400 text-xs">₺</span>
+                                    </div>
+                                    <input type="number" id="benefit5" value="" placeholder="Örn: 400" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                                </div>
+                            </div>
+                            <!-- Yakacak / Isınma -->
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">Yakacak / Isınma / Kış Yardımı</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-slate-400 text-xs">₺</span>
+                                    </div>
+                                    <input type="number" id="benefit6" value="" placeholder="Örn: 1000" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                                </div>
+                            </div>
+                            <!-- Konut / Kira Yardımı -->
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">Konut / Kira Yardımı veya Lojman</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-slate-400 text-xs">₺</span>
+                                    </div>
+                                    <input type="number" id="benefit7" value="" placeholder="Örn: 0" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                                </div>
+                            </div>
+                            <!-- Periyodik İkramiyeler -->
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">Periyodik İkramiyeler (Aylık Ort.)</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-slate-400 text-xs">₺</span>
+                                    </div>
+                                    <input type="number" id="benefit8" value="" placeholder="Örn: 2916" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                                </div>
+                            </div>
+                            <!-- İlave Tediye -->
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">İlave Tediye (Aylık Ort.)</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-slate-400 text-xs">₺</span>
+                                    </div>
+                                    <input type="number" id="benefit9" value="" placeholder="Örn: 0" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                                </div>
+                            </div>
+                            <!-- Yabancı Dil / İmza Yetkisi -->
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">Yabancı Dil / İmza Yetkisi Tazminatı</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-slate-400 text-xs">₺</span>
+                                    </div>
+                                    <input type="number" id="benefit10" value="" placeholder="Örn: 1500" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                                </div>
+                            </div>
+                            <!-- Özel Sağlık / BES -->
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">Özel Sağlık / Hayat Sigortası & BES</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-slate-400 text-xs">₺</span>
+                                    </div>
+                                    <input type="number" id="benefit11" value="" placeholder="Örn: 800" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                                </div>
+                            </div>
+                            <!-- Şirket Aracı / Telefon -->
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1 font-medium">Şirket Aracı, Telefon & İnternet Desteği</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-slate-400 text-xs">₺</span>
+                                    </div>
+                                    <input type="number" id="benefit12" value="" placeholder="Örn: 2000" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Diğer Yan Ödemeler -->
+                        <div>
+                            <label class="block text-xs text-slate-600 mb-1 font-medium">Diğer Yan Ödemeler (Aylık Brüt)</label>
+                            <div class="relative rounded-lg shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-slate-400 text-xs">₺</span>
+                                </div>
+                                <input type="number" id="benefit13" value="" placeholder="Örn: 0" oninput="calculateAll()" class="w-full pl-6 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Butonlar -->
+                    <div class="pt-4 border-t border-slate-100">
+                        <button onclick="clearAll()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 text-sm tracking-wide">
+                            TEMİZLE
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Sağ Kolon: Hesaplama Sonuçları (5 Kolon) -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Yasal Limit Bildirim Kutusu -->
+                <div id="kidemWarning" class="hidden p-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl flex gap-3 items-start transition-all duration-200">
+                    <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider">Yasal Kıdem Limiti Uyarısı</h4>
+                        <p class="text-[11px] mt-0.5 leading-relaxed text-amber-800">
+                            İşçinin toplam kıdem süresi 6 ayın altında kalmaktadır. 4857 sayılı İş Kanunu madde 18 gereği, yasal olarak işe iade davası açılabilmesi için işçinin en az 6 aylık kıdeme sahip olması gerekmektedir.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Detaylı Çıktı Tablosu -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                        <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Hesaplama Kırılımları</h3>
+                        <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg" id="summaryKidemText">-</span>
+                    </div>
+
+                    <div class="p-6 space-y-5">
+                        
+                        <!-- 1. KISIM: İşe Başlatmama Tazminatı -->
+                        <div class="space-y-3">
+                            <h4 class="text-xs font-extrabold text-blue-800 uppercase tracking-widest border-b border-blue-50 pb-1">I. İşe Başlatmama Tazminatı</h4>
+                            
+                            <div class="flex justify-between text-xs font-medium py-1">
+                                <span class="text-slate-500">Hesaplanan Kıdem Süresi:</span>
+                                <span class="text-slate-900 font-bold" id="resKidemSure">-</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-medium py-1">
+                                <span class="text-slate-500">Son Çıplak Brüt Ücret:</span>
+                                <span class="text-slate-900 font-bold" id="resCiplakBrut">-</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-medium py-1">
+                                <span class="text-slate-500">Tazminat Ödemesine Esas Ay:</span>
+                                <span class="text-slate-900 font-bold" id="resTazminatAy">-</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-medium py-1">
+                                <span class="text-slate-500">Brüt İşe Başlatmama Tazminatı:</span>
+                                <span class="text-slate-900 font-bold" id="resBrutTazminat">-</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-medium py-1">
+                                <span class="text-slate-500">Damga Vergisi Kesintisi (%0.759):</span>
+                                <span class="text-rose-600 font-semibold" id="resDvTazminat">-</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-bold bg-rose-50/50 p-2.5 rounded-lg border border-rose-100/50 mt-1">
+                                <span class="text-rose-950 uppercase text-[10px] tracking-wide">NET İŞE BAŞLATMAMA TAZMİNATI:</span>
+                                <span class="text-rose-700 font-extrabold" id="resNetTazminat">-</span>
+                            </div>
+                        </div>
+
+                        <!-- 2. KISIM: Boşta Geçen Süre Ücreti -->
+                        <div class="space-y-3 pt-2">
+                            <h4 class="text-xs font-extrabold text-blue-800 uppercase tracking-widest border-b border-blue-50 pb-1">II. Boşta Geçen Süre Ücreti</h4>
+
+                            <div class="flex justify-between text-xs font-medium py-1">
+                                <span class="text-slate-500">Boşta Geçen Süre Esas Ay:</span>
+                                <span class="text-slate-900 font-bold" id="resBostaEsasAy">4 Ay</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-medium py-1">
+                                <span class="text-slate-500">Aylık Giydirilmiş Brüt Ücret:</span>
+                                <span class="text-slate-900 font-bold" id="resGiydirilmisMaas">-</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-medium py-1">
+                                <span class="text-slate-500">Brüt Boşta Geçen Ücret (4 Ay):</span>
+                                <span class="text-slate-900 font-bold" id="resBrutBosta">-</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-medium py-1">
+                                <span class="text-slate-500">SGK Kesintisi (İşçi - %15):</span>
+                                <span class="text-rose-600 font-semibold" id="resSgkBosta">-</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-medium py-1">
+                                <span class="text-slate-500">Gelir Vergisi Matrahı:</span>
+                                <span class="text-slate-900 font-bold" id="resGvMatrah">-</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-medium py-1">
+                                <span class="text-slate-500">Gelir Vergisi Kesintisi:</span>
+                                <span class="text-rose-600 font-semibold" id="resGvBosta">-</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-medium py-1">
+                                <span class="text-slate-500">Damga Vergisi Kesintisi (%0.759):</span>
+                                <span class="text-rose-600 font-semibold" id="resDvBosta">-</span>
+                            </div>
+                            <div class="flex justify-between text-xs font-bold bg-rose-50/50 p-2.5 rounded-lg border border-rose-100/50 mt-1">
+                                <span class="text-rose-950 uppercase text-[10px] tracking-wide">NET BOŞTA GEÇEN SÜRE ÜCRETİ:</span>
+                                <span class="text-rose-700 font-extrabold" id="resNetBosta">-</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Büyük Ödenecek Kartı -->
+                <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl shadow-md p-6 relative overflow-hidden">
+                    <div class="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-y-1/3 translate-x-1/3">
+                        <svg class="w-64 h-64" fill="currentColor" viewBox="0 0 200 200">
+                            <path d="M40,-53C51.7,-46.2,60.8,-32.8,66,-17.7C71.2,-2.7,72.4,14,66.6,28.3C60.8,42.7,48,54.7,33.1,62.8C18.2,70.9,1.2,75.1,-15.8,72.5C-32.8,69.9,-49.7,60.5,-59.8,46.5C-69.9,32.5,-73.2,14,-72,-3.5C-70.8,-21,-65,-37.5,-53.8,-44.5C-42.5,-51.5,-25.8,-49,-10,-46.1C5.8,-43.2,17.4,-39.8,40,-53Z" transform="translate(100, 100)" />
+                        </svg>
+                    </div>
+                    <div class="relative z-10 space-y-1">
+                        <span class="text-xs uppercase font-extrabold text-emerald-100 tracking-wider">TOPLAM NET ÖDENECEK ALACAK</span>
+                        <h3 class="text-3xl md:text-4xl font-extrabold tracking-tight" id="resToplamNet">₺0,00</h3>
+                        <p class="text-[10px] text-emerald-100/90 leading-relaxed pt-2">
+                            * Net İşe Başlatmama Tazminatı ile 4 aylık Net Boşta Geçen Süre Ücretinin vergi ve SGK kesintileri yapılmış haldeki net toplamıdır.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- PDF Aktarma Butonu -->
+                <button onclick="exportToPDF()" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 text-sm tracking-wide">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    SONUÇLARI PDF OLARAK RAPORLA
+                </button>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Alt Bilgilendirme ve Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-6 px-6 text-center text-xs border-t border-slate-800">
+        <div class="max-w-7xl mx-auto space-y-2">
+            <p>© 2026 İşe İade Tazminat Hesaplama Sistemi - 4857 Sayılı Kanun Uyumlu Web Portalı.</p>
+            <p class="text-[10px] text-slate-500">Yasal Açıklama: Bu web uygulaması bilgilendirme amaçlı olup, kesin hukuki mütalaa yerine geçmez. Resmi hesaplamalarda uzman desteği alınız.</p>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Element -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-lg border border-slate-700 text-xs font-semibold translate-y-20 opacity-0 transition-all duration-300 pointer-events-none z-50 flex items-center gap-2">
+        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span id="toast-message">İşlem Başarılı!</span>
+    </div>
+
+    <!-- JavaScript Hesaplama Motoru -->
+    <script>
+        // Sayfa yüklendiğinde hesaplamayı ilk kez çalıştır
+        window.addEventListener('DOMContentLoaded', () => {
+            calculateAll();
+        });
+
+        // Para birimi formatlayıcı fonksiyonu
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
+        }
+
+        // Hesaplama yapılamayan durumlarda tüm çıktıları sıfırlayan yardımcı fonksiyon
+        function zeroAllResults() {
+            document.getElementById('resTazminatAy').innerText = "0 Ay";
+            document.getElementById('resBrutTazminat').innerText = formatMoney(0);
+            document.getElementById('resDvTazminat').innerText = formatMoney(0);
+            document.getElementById('resNetTazminat').innerText = formatMoney(0);
+
+            document.getElementById('resGiydirilmisMaas').innerText = formatMoney(0);
+            document.getElementById('resBrutBosta').innerText = formatMoney(0);
+            document.getElementById('resSgkBosta').innerText = formatMoney(0);
+            document.getElementById('resGvMatrah').innerText = formatMoney(0);
+            document.getElementById('resGvBosta').innerText = formatMoney(0);
+            document.getElementById('resDvBosta').innerText = formatMoney(0);
+            document.getElementById('resNetBosta').innerText = formatMoney(0);
+
+            document.getElementById('resToplamNet').innerText = formatMoney(0);
+        }
+
+        // Hesaplama Ana Fonksiyonu
+        function calculateAll() {
+            // Girdileri Al
+            const kidemGunInput = document.getElementById('kidemGun');
+            const ciplakBrutInput = document.getElementById('ciplakBrut');
+            const isSendikalInput = document.getElementById('isSendikal');
+            const vergiOraniInput = document.getElementById('vergiOrani');
+
+            const kidemGun = parseInt(kidemGunInput.value) || 0;
+            const ciplakBrut = parseFloat(ciplakBrutInput.value) || 0;
+            const isSendikal = isSendikalInput.value;
+            const vergiOrani = (parseFloat(vergiOraniInput.value) || 15) / 100;
+
+            // Kıdem Gün Sayısını Matematiksel Olarak Yıl, Ay ve Güne Çevirme (Yıl = 360 Gün esası)
+            const yrs = Math.floor(kidemGun / 360);
+            const kalanGun = kidemGun % 360;
+            const mths = Math.floor(kalanGun / 30);
+            const dys = kalanGun % 30;
+
+            // Kıdem Süresini Göster
+            const kidemText = `${yrs} Yıl ${mths} Ay ${dys} Gün`;
+            document.getElementById('resKidemSure').innerText = kidemText;
+            document.getElementById('summaryKidemText').innerText = kidemText;
+
+            // 6 Aylık Yasal Limit Uyarısı Kontrolü (Yıl 360 esasına göre türetilen aylar)
+            const toplamHakAy = (yrs * 12) + mths;
+            const warningBox = document.getElementById('kidemWarning');
+            
+            // Engelleme Kuralı: 6 aydan az kıdem varsa ve sendikal değilse hesaplama yapılmaz
+            if (toplamHakAy < 6 && isSendikal === "Hayır" && kidemGun > 0) {
+                warningBox.classList.remove('hidden');
+                zeroAllResults();
+                return;
+            } else {
+                warningBox.classList.add('hidden');
+            }
+
+            // Tazminat Ödemesine Esas Ay Hesabı (Kıdem Kademeleri)
+            let tazminatAy = 0;
+            if (isSendikal === "Evet") {
+                tazminatAy = 12; // Sendikal fesihte en az 1 yıllık maktu
+            } else {
+                if (toplamHakAy < 6) {
+                    tazminatAy = 0;
+                } else if (yrs < 5) {
+                    tazminatAy = 4;
+                } else if (yrs < 15) {
+                    tazminatAy = 5;
+                } else {
+                    tazminatAy = 6;
+                }
+            }
+
+            // Sosyal Yardımları Döngüsel Olarak Topla (C9 - C21 arasındakiler)
+            let sosyalYardimlarToplam = 0;
+            for (let i = 1; i <= 13; i++) {
+                const benefitVal = parseFloat(document.getElementById(`benefit${i}`).value) || 0;
+                sosyalYardimlarToplam += benefitVal;
+            }
+
+            // 1. İŞE BAŞLATMAMA TAZMİNATI HESAPLARI
+            const brutTazminat = tazminatAy * ciplakBrut;
+            const dvTazminat = brutTazminat * 0.00759; // Binde 7.59 Damga Vergisi
+            const netTazminat = brutTazminat - dvTazminat;
+
+            // Sonuçleri Hücrelere Yaz
+            document.getElementById('resCiplakBrut').innerText = formatMoney(ciplakBrut);
+            document.getElementById('resTazminatAy').innerText = `${tazminatAy} Ay`;
+            document.getElementById('resBrutTazminat').innerText = formatMoney(brutTazminat);
+            document.getElementById('resDvTazminat').innerText = `-${formatMoney(dvTazminat)}`;
+            document.getElementById('resNetTazminat').innerText = formatMoney(netTazminat);
+
+            // 2. BOŞTA GEÇEN SÜRE ÜCRETİ HESAPLARI
+            const giydirilmisMaas = ciplakBrut + sosyalYardimlarToplam;
+            const brutBosta = giydirilmisMaas * 4; // Yasal olarak maksimum 4 aydır
+            const sgkBosta = brutBosta * 0.15; // %14 SGK + %1 İşsizlik İşçi Payı
+            const gvMatrah = brutBosta - sgkBosta;
+            const gvBosta = gvMatrah * vergiOrani;
+            const dvBosta = brutBosta * 0.00759;
+            const netBosta = brutBosta - sgkBosta - gvBosta - dvBosta;
+
+            // Sonuçları Hücrelere Yaz
+            document.getElementById('resGiydirilmisMaas').innerText = formatMoney(giydirilmisMaas);
+            document.getElementById('resBrutBosta').innerText = formatMoney(brutBosta);
+            document.getElementById('resSgkBosta').innerText = `-${formatMoney(sgkBosta)}`;
+            document.getElementById('resGvMatrah').innerText = formatMoney(gvMatrah);
+            document.getElementById('resGvBosta').innerText = `-${formatMoney(gvBosta)}`;
+            document.getElementById('resDvBosta').innerText = `-${formatMoney(dvBosta)}`;
+            document.getElementById('resNetBosta').innerText = formatMoney(netBosta);
+
+            // 3. GENEL TOPLAM
+            const toplamNet = netTazminat + netBosta;
+            document.getElementById('resToplamNet').innerText = formatMoney(toplamNet);
+        }
+
+        // Temizleme Fonksiyonu
+        function clearAll() {
+            // Girdileri Varsayılan / Boş Değerlere Çek
+            document.getElementById('kidemGun').value = "";
+            document.getElementById('ciplakBrut').value = "";
+            document.getElementById('isSendikal').value = "Hayır";
+            document.getElementById('vergiOrani').value = "15";
+
+            // Tüm 13 adet sosyal yardım kalemini temizle
+            for (let i = 1; i <= 13; i++) {
+                document.getElementById(`benefit${i}`).value = "";
+            }
+
+            // Sonuçları Temizle
+            document.getElementById('resKidemSure').innerText = "-";
+            document.getElementById('summaryKidemText').innerText = "-";
+            document.getElementById('resCiplakBrut').innerText = "-";
+            document.getElementById('resTazminatAy').innerText = "-";
+            document.getElementById('resBrutTazminat').innerText = "-";
+            document.getElementById('resDvTazminat').innerText = "-";
+            document.getElementById('resNetTazminat').innerText = "-";
+
+            document.getElementById('resGiydirilmisMaas').innerText = "-";
+            document.getElementById('resBrutBosta').innerText = "-";
+            document.getElementById('resSgkBosta').innerText = "-";
+            document.getElementById('resGvMatrah').innerText = "-";
+            document.getElementById('resGvBosta').innerText = "-";
+            document.getElementById('resDvBosta').innerText = "-";
+            document.getElementById('resNetBosta').innerText = "-";
+
+            document.getElementById('resToplamNet').innerText = "₺0,00";
+
+            // Uyarı Kutusunu Kapat
+            document.getElementById('kidemWarning').classList.add('hidden');
+
+            showToast("Tüm veri alanları ve hesaplama sonuçları başarıyla sıfırlandı!", "success");
+        }
+
+        // Bildirim (Toast) Mesajı Gösterme
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            
+            toastMsg.innerText = message;
+            
+            if (type === 'success') {
+                toast.className = "fixed bottom-5 right-5 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-lg border border-slate-700 text-xs font-semibold translate-y-0 opacity-100 transition-all duration-300 pointer-events-auto z-50 flex items-center gap-2";
+            } else {
+                toast.className = "fixed bottom-5 right-5 bg-rose-600 text-white px-5 py-3 rounded-xl shadow-lg border border-rose-500 text-xs font-semibold translate-y-0 opacity-100 transition-all duration-300 pointer-events-auto z-50 flex items-center gap-2";
+            }
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-20');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 3000);
+        }
+
+        // PDF Olarak Dışa Aktarma Fonksiyonu
+        function exportToPDF() {
+            const kidemGun = document.getElementById('kidemGun').value;
+            const ciplakBrut = document.getElementById('ciplakBrut').value;
+
+            if (!kidemGun || !ciplakBrut) {
+                showToast("PDF üretmek için lütfen temel girdi alanlarını doldurunuz!", "error");
+                return;
+            }
+
+            showToast("PDF Raporu hazırlanıyor, lütfen bekleyiniz...", "success");
+
+            // Elementlerin anlık durumdaki değerlerini topla
+            const resKidemSure = document.getElementById('resKidemSure').innerText;
+            const resCiplakBrut = document.getElementById('resCiplakBrut').innerText;
+            const resTazminatAy = document.getElementById('resTazminatAy').innerText;
+            const resBrutTazminat = document.getElementById('resBrutTazminat').innerText;
+            const resDvTazminat = document.getElementById('resDvTazminat').innerText;
+            const resNetTazminat = document.getElementById('resNetTazminat').innerText;
+
+            const resBostaEsasAy = document.getElementById('resBostaEsasAy').innerText;
+            const resGiydirilmisMaas = document.getElementById('resGiydirilmisMaas').innerText;
+            const resBrutBosta = document.getElementById('resBrutBosta').innerText;
+            const resSgkBosta = document.getElementById('resSgkBosta').innerText;
+            const resGvMatrah = document.getElementById('resGvMatrah').innerText;
+            const resGvBosta = document.getElementById('resGvBosta').innerText;
+            const resDvBosta = document.getElementById('resDvBosta').innerText;
+            const resNetBosta = document.getElementById('resNetBosta').innerText;
+            
+            const resToplamNet = document.getElementById('resToplamNet').innerText;
+            const isSendikal = document.getElementById('isSendikal').value;
+            const vergiOrani = document.getElementById('vergiOrani').value;
+
+            // Rapor Tarihi
+            const today = new Date().toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            // Sosyal Yardımları Hesapla
+            let sosyalYardimlarHtml = "";
+            let sosyalToplam = 0;
+            const sosyalIsimleri = [
+                "Yemek Yardımı", "Çocuk ve Aile Yardımı", "Doğum, Evlilik, Ölüm Yardımı", 
+                "Eğitim / Öğrenim Yardımı", "Bayram Harçlığı / Yardımları", "Yakacak / Isınma / Kış",
+                "Konut / Kira Yardımı veya Lojman", "Periyodik İkramiyeler", "İlave Tediye",
+                "Yabancı Dil / İmza Yetkisi Tazminatı", "Özel Sağlık / BES", "Şirket Aracı / Telefon / İnternet",
+                "Diğer Yan Ödemeler"
+            ];
+            
+            for (let i = 1; i <= 13; i++) {
+                const val = parseFloat(document.getElementById(`benefit${i}`).value) || 0;
+                if (val > 0) {
+                    sosyalToplam += val;
+                    sosyalYardimlarHtml += `
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 12px; font-size: 11px; color: #475569;">${sosyalIsimleri[i-1]}</td>
+                            <td style="padding: 6px 12px; font-size: 11px; text-align: right; font-weight: 600; color: #1e293b;">${formatMoney(val)}</td>
+                        </tr>
+                    `;
+                }
+            }
+
+            if (sosyalYardimlarHtml === "") {
+                sosyalYardimlarHtml = `
+                    <tr>
+                        <td colspan="2" style="padding: 8px 12px; font-size: 11px; color: #94a3b8; text-align: center; font-style: italic;">
+                            Düzenli sosyal yardım girilmemiştir.
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // PDF Rapor Tasarımı DOM Şablonu
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.padding = '40px';
+            pdfContainer.style.fontFamily = 'Arial, sans-serif';
+            pdfContainer.style.color = '#1e293b';
+            pdfContainer.style.lineHeight = '1.4';
+
+            pdfContainer.innerHTML = `
+                <!-- Antet / Başlık Alanı -->
+                <div style="border-bottom: 3px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div>
+                        <h1 style="font-size: 20px; font-weight: 800; color: #1e3a8a; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">İŞE İADE TAZMİNATLARI HESAP RAPORU</h1>
+                        <p style="font-size: 10px; color: #64748b; margin: 4px 0 0 0; font-weight: 600;">4857 Sayılı İş Kanunu m.21 ve Yargıtay Esasları Uyarınca Düzenlenmiştir</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 11px; font-weight: bold; background: #f1f5f9; padding: 4px 10px; border-radius: 6px; border: 1px solid #cbd5e1; color: #334155;">Tarih: ${today}</span>
+                    </div>
+                </div>
+
+                <!-- Genel Bilgiler / Parametreler -->
+                <div style="margin-bottom: 20px;">
+                    <h3 style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">I. HESAPLAMA PARAMETRELERİ</h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 12px; font-weight: 600; color: #475569; width: 40%;">Girdi Kıdem Gün Sayısı:</td>
+                            <td style="padding: 6px 12px; font-weight: bold; color: #0f172a;">${kidemGun} Gün (${resKidemSure})</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 12px; font-weight: 600; color: #475569;">Son Çıplak Brüt Ücret (Aylık):</td>
+                            <td style="padding: 6px 12px; font-weight: bold; color: #0f172a;">${resCiplakBrut}</td>
+                        </tr>
+                        <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 12px; font-weight: 600; color: #475569;">Sendikal Nedenle Fesih mi?</td>
+                            <td style="padding: 6px 12px; font-weight: bold; color: #0f172a;">${isSendikal}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 12px; font-weight: 600; color: #475569;">Öngörülen Gelir Vergisi Dilimi:</td>
+                            <td style="padding: 6px 12px; font-weight: bold; color: #0f172a;">%${vergiOrani}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Yan Ödemeler Bölümü -->
+                <div style="margin-bottom: 20px;">
+                    <h3 style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">II. SOSYAL VE STATÜYE BAĞLI YAN ÖDEMELER</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px;">
+                        ${sosyalYardimlarHtml}
+                        <tr style="background: #f1f5f9; border-top: 1.5px solid #94a3b8;">
+                            <td style="padding: 8px 12px; font-size: 11px; font-weight: bold; color: #1e293b;">TOPLAM SOSYAL YAN ÖDEMELER (AYLIK BRÜT):</td>
+                            <td style="padding: 8px 12px; font-size: 11px; font-weight: bold; text-align: right; color: #0f172a;">${formatMoney(sosyalToplam)}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Hesaplama Kırılımları Tablosu -->
+                <div style="margin-bottom: 20px;">
+                    <h3 style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">III. DETAYLI TAZMİNAT KIRILIMLARI</h3>
+                    
+                    <div style="display: flex; gap: 20px;">
+                        <!-- İşe Başlatmama Tazminatı -->
+                        <div style="flex: 1; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+                            <div style="background: #1e3a8a; color: white; padding: 6px 12px; font-size: 11px; font-weight: bold; text-align: center;">A. İşe Başlatmama Tazminatı</div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                                <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                    <td style="padding: 6px 10px; color: #475569;">Esas Alınan Ay Süresi:</td>
+                                    <td style="padding: 6px 10px; font-weight: bold; text-align: right;">${resTazminatAy}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 6px 10px; color: #475569;">Brüt Tazminat Tutarı:</td>
+                                    <td style="padding: 6px 10px; font-weight: bold; text-align: right;">${resBrutTazminat}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                    <td style="padding: 6px 10px; color: #475569;">Damga Vergisi (%0.759):</td>
+                                    <td style="padding: 6px 10px; font-weight: bold; text-align: right; color: #b91c1c;">${resDvTazminat}</td>
+                                </tr>
+                                <tr style="background: #fef2f2; font-weight: bold; border-top: 1px solid #fca5a5;">
+                                    <td style="padding: 8px 10px; color: #991b1b; font-size: 11px;">NET TAZMİNAT TUTARI:</td>
+                                    <td style="padding: 8px 10px; text-align: right; color: #991b1b; font-size: 11px;">${resNetTazminat}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- Boşta Geçen Süre Ücreti -->
+                        <div style="flex: 1; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+                            <div style="background: #0f766e; color: white; padding: 6px 12px; font-size: 11px; font-weight: bold; text-align: center;">B. Boşta Geçen Süre Ücreti</div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                                <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                    <td style="padding: 5px 10px; color: #475569;">Esas Alınan Ay Süresi:</td>
+                                    <td style="padding: 5px 10px; font-weight: bold; text-align: right;">${resBostaEsasAy}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 5px 10px; color: #475569;">Giydirilmiş Brüt Ücret:</td>
+                                    <td style="padding: 5px 10px; font-weight: bold; text-align: right;">${resGiydirilmisMaas}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                    <td style="padding: 5px 10px; color: #475569;">Toplam Brüt (4 Ay):</td>
+                                    <td style="padding: 5px 10px; font-weight: bold; text-align: right;">${resBrutBosta}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 5px 10px; color: #475569;">SGK Kesintisi (%15):</td>
+                                    <td style="padding: 5px 10px; font-weight: bold; text-align: right; color: #b91c1c;">${resSgkBosta}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                                    <td style="padding: 5px 10px; color: #475569;">Gelir Vergisi Kesintisi:</td>
+                                    <td style="padding: 5px 10px; font-weight: bold; text-align: right; color: #b91c1c;">${resGvBosta}</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 5px 10px; color: #475569;">Damga Vergisi (%0.759):</td>
+                                    <td style="padding: 5px 10px; font-weight: bold; text-align: right; color: #b91c1c;">${resDvBosta}</td>
+                                </tr>
+                                <tr style="background: #f0fdf4; font-weight: bold; border-top: 1px solid #bbf7d0;">
+                                    <td style="padding: 8px 10px; color: #166534; font-size: 11px;">NET BOŞTA GEÇEN ÜCRET:</td>
+                                    <td style="padding: 8px 10px; text-align: right; color: #166534; font-size: 11px;">${resNetBosta}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sonuç Özeti / Net Ödenecek Kartı -->
+                <div style="background: #065f46; color: white; padding: 16px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                    <div>
+                        <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9;">TOPLAM NET TAHSİL EDİLECEK ALACAK TUTARI</span>
+                        <h2 style="font-size: 24px; font-weight: 800; margin: 4px 0 0 0; letter-spacing: -0.5px;">${resToplamNet}</h2>
+                    </div>
+                    <div style="text-align: right; font-size: 9px; opacity: 0.85; max-width: 250px; line-height: 1.3;">
+                        * İşe başlatmama halinde ödenecek net tazminat ile 4 aylık yasal sınır içindeki vergi ve prim kesintileri yapılmış boşta geçen süre net ücretinin toplamıdır.
+                    </div>
+                </div>
+
+                <!-- İmza ve Beyan Alanı -->
+                <div style="display: flex; justify-content: space-between; margin-top: 50px;">
+                    <div style="text-align: center; width: 45%;">
+                        <p style="font-size: 11px; font-weight: bold; color: #1e3a8a; margin-bottom: 40px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">Hesaplamayı Yapan</p>
+                        <p style="font-size: 11px; color: #475569; margin: 0;">İsim / İmza</p>
+                    </div>
+                    <div style="text-align: center; width: 45%;">
+                        <p style="font-size: 11px; font-weight: bold; color: #1e3a8a; margin-bottom: 40px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">Kontrol Eden</p>
+                        <p style="font-size: 11px; color: #475569; margin: 0;">İsim / İmza</p>
+                    </div>
+                </div>
+
+                <!-- Bilgilendirme Notu -->
+                <div style="margin-top: 50px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; font-size: 9px; color: #64748b; line-height: 1.4; text-align: justify;">
+                    <strong>Yasal Sorumluluk Sınırı:</strong> Bu rapor yapay zeka destekli hobi yazılımı aracılığıyla bilgilendirme amaçlı üretilmiştir. Resmi merciler önünde, yargılama aşamasında veya arabuluculuk müzakerelerinde kesin bir delil teşkil etmemekte olup resmi ve bağlayıcı hesaplamalar için uzman bir hukukçu veya serbest muhasebeci mali müşavir desteği alınması tavsiye edilir.
+                </div>
+            `;
+
+            // html2pdf.js Seçenekleri
+            const opt = {
+                margin:       10,
+                filename:     `Ise_Iade_Tazminat_Raporu_${today.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // PDF'i oluştur ve indir
+            html2pdf().set(opt).from(pdfContainer).save().then(() => {
+                showToast("PDF Başarıyla İndirildi!", "success");
+            });
+        }
+    </script>
+</body>
+</html>
